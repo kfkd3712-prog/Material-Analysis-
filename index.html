@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Material Analysis Studio v1.3 · 2026-11-23 · 기록 1건 PDF 만들기(파단면·미세조직·시험 데이터, AI 상담 부록 선택) -->
+<!-- Material Analysis Studio v1.4 · 2026-11-23 · 새 키 형식(AQ.) 안내, 대체 모델 여러 개·자동 채움, 바쁠 때 자동 재시도, 연결 확인 기억 -->
 <html lang="ko"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -436,6 +436,7 @@
       try {
         settings = { ...settings, ...(JSON.parse(localStorage.getItem(KEYS.settings) || '{}') || {}) };
       } catch (e) {}
+      loadAiStatus();
       saveData();
     }
 
@@ -944,7 +945,7 @@
             <div class="panel-body" style="display:flex; flex-direction:column; gap:10px;">
               <p class="hint">AI 상담, PDF·사진 성적서 읽기, 소견 초안에 씁니다. API 키는 <strong>이 브라우저에만</strong> 저장되고, 소스 코드·백업 파일에는 들어가지 않습니다.</p>
               <div class="ai-guide">
-                <b>키 발급</b> — <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio → Get API key</a>에서 만든 <b>Gemini API 키</b>(보통 <span class="mono">AIza</span>로 시작, 39자)를 그대로 복사해 붙여넣으세요. Claude·OpenAI·Google Cloud 서비스 계정 키는 쓸 수 없습니다.
+                <b>키 발급</b> — <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio → Get API key</a>에서 만든 <b>Gemini API 키</b>를 그대로 복사해 붙여넣으세요. 새로 발급하면 <span class="mono">AQ.</span>로 시작하고(새 형식), 예전에 만든 키는 <span class="mono">AIza</span>로 시작합니다. 둘 다 쓸 수 있습니다. Claude·OpenAI 키는 쓸 수 없습니다.
               </div>
               <div class="field"><label>API 키</label>
                 <div class="row" style="flex-wrap:nowrap;">
@@ -958,8 +959,9 @@
               ${aiStatusHtml()}
               <div class="grid-2">
                 <div class="field"><label>모델</label><input class="input mono" list="aiModelList" value="${escapeHtml(settings.model)}" onchange="setSetting('model', this.value)"></div>
-                <div class="field"><label>대체 모델 (과부하 시)</label><input class="input mono" list="aiModelList" value="${escapeHtml(settings.fallbackModel)}" placeholder="선택" onchange="setSetting('fallbackModel', this.value)"></div>
+                <div class="field"><label>대체 모델 (과부하 시, 쉼표로 여러 개)</label><input class="input mono" value="${escapeHtml(settings.fallbackModel)}" placeholder="예: gemini-3.7-flash, gemini-3.6-flash" onchange="setSetting('fallbackModel', this.value)"></div>
               </div>
+              <p class="hint">주 모델이 바쁘면(503·429) 대체 모델을 순서대로 시도하고, 모두 바쁘면 몇 초 뒤 한 번 더 자동으로 시도합니다.${aiStatus.models.length ? ` 이 키로 쓸 수 있는 모델: <span class="mono">${aiStatus.models.filter(m => !/(tts|image|audio|live|embedding)/i.test(m)).map(escapeHtml).join(', ')}</span>` : ''}</p>
               <datalist id="aiModelList">${aiStatus.models.map(m => `<option value="${escapeHtml(m)}"></option>`).join('')}</datalist>
             </div>
           </section>
@@ -986,6 +988,30 @@
 
     // AI 연결 상태 (메모리에만 보관): state = 'none' | 'testing' | 'ok' | 'bad'
     const aiStatus = { state: 'none', msg: '', models: [] };
+    const AI_STATUS_KEY = 'mas_ai_status';
+    // 마지막 연결 테스트 결과를 기억 (키 자체가 아니라 끝 4자리로만 같은 키인지 확인)
+    function loadAiStatus() {
+      try {
+        const st = JSON.parse(localStorage.getItem(AI_STATUS_KEY) || 'null');
+        const key = getAiKey();
+        if (st && key && st.keyTail === key.slice(-4) && st.state === 'ok') {
+          aiStatus.state = 'ok';
+          aiStatus.msg = `${st.msg} (${new Date(st.at).toLocaleDateString('ko-KR')} 확인)`;
+          aiStatus.models = Array.isArray(st.models) ? st.models : [];
+        }
+      } catch (e) {}
+    }
+
+    function saveAiStatus() {
+      try {
+        if (aiStatus.state === 'ok') localStorage.setItem(AI_STATUS_KEY, JSON.stringify({ state: 'ok', msg: `키 확인 완료 · 사용 가능한 Gemini 모델 ${aiStatus.models.length}개`, models: aiStatus.models, at: Date.now(), keyTail: getAiKey().slice(-4) }));
+        else if (aiStatus.state === 'bad' || aiStatus.state === 'none') localStorage.removeItem(AI_STATUS_KEY);
+      } catch (e) {}
+    }
+
+    function fallbackList() {
+      return String(settings.fallbackModel || '').split(/[,\s]+/).map(x => x.trim()).filter(x => x && x !== settings.model);
+    }
 
     function maskKey(k) {
       return k.length > 10 ? `${k.slice(0, 6)}…${k.slice(-4)}` : '••••';
@@ -1026,7 +1052,7 @@
       aiStatus.state = 'testing';
       aiStatus.msg = '';
       render();
-      const formatWarn = /^AIza[0-9A-Za-z_\-]{30,}$/.test(key) ? '' : ' (키 형식이 Gemini 키와 다릅니다: 보통 AIza로 시작하는 39자)';
+      const formatWarn = /^(AIza[0-9A-Za-z_\-]{30,}|AQ\.[0-9A-Za-z_.\-]{20,})$/.test(key) ? '' : ' (키 형식이 Gemini 키와 다릅니다: AQ. 또는 AIza로 시작해야 함)';
       try {
         const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', { headers: { 'x-goog-api-key': key } });
         const json = await res.json().catch(() => ({}));
@@ -1044,17 +1070,34 @@
             const pick = recommendModel(models);
             const old = settings.model;
             settings.model = pick;
-            if (settings.fallbackModel && !models.includes(settings.fallbackModel)) settings.fallbackModel = '';
             saveData();
             aiStatus.msg += ` · 설정된 모델 '${old}'은 이 키로 쓸 수 없어 '${pick}'(으)로 바꿨습니다`;
           }
+          // 대체 모델: 목록에 없는 것은 빼고, 비어 있으면 같은 계열의 다음 버전 2개를 자동으로 채움
+          const fb = fallbackList().filter(m => !models.length || models.includes(m));
+          if (!fb.length && models.length) {
+            const auto = rankFlash(models).filter(m => m !== settings.model).slice(0, 2);
+            if (auto.length) {
+              settings.fallbackModel = auto.join(', ');
+              aiStatus.msg += ` · 대체 모델을 ${auto.join(', ')}(으)로 채웠습니다`;
+            }
+          } else settings.fallbackModel = fb.join(', ');
+          saveData();
         }
       } catch (e) {
         aiStatus.state = 'bad';
         aiStatus.msg = 'Google AI 서버에 연결하지 못했습니다. 인터넷 연결이나 회사 방화벽(generativelanguage.googleapis.com 차단 여부)을 확인해 주세요.';
       }
+      saveAiStatus();
       render();
       showToast(aiStatus.state === 'ok' ? 'AI 연결 확인 완료' : 'AI 연결 실패 — 설정 화면의 안내를 확인하세요.');
+    }
+
+    // 안정판 flash 계열을 최신 버전 순으로 (미리보기·실험·lite·특수 용도 제외)
+    function rankFlash(models) {
+      const ver = m => { const v = String(m).match(/(\d+(?:\.\d+)?)/); return v ? Number(v[1]) : 0; };
+      return models.filter(m => /flash/i.test(m) && !/(preview|exp|lite|tts|image|audio|live|embedding|thinking)/i.test(m))
+        .sort((a, b) => ver(b) - ver(a) || a.length - b.length);
     }
 
     // 안정판 flash 계열을 우선 추천 (미리보기·실험·특수 용도 모델 제외)
@@ -1127,8 +1170,21 @@
       const o = opts || {};
       const key = getAiKey();
       if (!key) throw new Error('설정에서 Gemini API 키를 먼저 저장해 주세요.');
-      const models = [settings.model, settings.fallbackModel].filter(Boolean);
+      const models = [settings.model, ...fallbackList()].filter(Boolean);
       if (!models.length) throw new Error('설정에서 AI 모델 이름을 입력해 주세요.');
+      // 모든 모델이 바쁘면(503·500·429) 잠깐 기다렸다가 한 번 더 돌림
+      for (let round = 0; round < 2; round++) {
+        try {
+          return await callGeminiRound(models, contents, o, key);
+        } catch (err) {
+          if (err.auth || err.stop || round === 1 || ![429, 500, 503].includes(err.status)) throw err;
+          showToast(`AI 서버가 바빠 ${round ? '' : '4초 뒤 '}다시 시도합니다…`);
+          await new Promise(r => setTimeout(r, 4000));
+        }
+      }
+    }
+
+    async function callGeminiRound(models, contents, o, key) {
       const body = { contents, generationConfig: { temperature: o.json ? 0.1 : 0.4 } };
       if (o.json) body.generationConfig.responseMimeType = 'application/json';
       if (o.system) body.systemInstruction = { parts: [{ text: o.system }] };
@@ -1149,11 +1205,13 @@
               if (/키|제한|API가 꺼져|지역/.test(lastErr.message)) {
                 aiStatus.state = 'bad';
                 aiStatus.msg = lastErr.message;
+                saveAiStatus();
                 lastErr.auth = true;
                 throw lastErr;
               }
             }
             if ([404, 429, 500, 503].includes(res.status)) continue;
+            lastErr.stop = true;
             throw lastErr;
           }
           const cand = (json.candidates || [])[0];
@@ -1165,7 +1223,7 @@
           aiStatus.state = 'ok';
           return { text, model };
         } catch (err) {
-          if (err.auth) throw err;
+          if (err.auth || err.stop) throw err;
           lastErr = err instanceof TypeError
             ? new Error('Google AI 서버에 연결하지 못했습니다. 인터넷 연결이나 회사 방화벽(generativelanguage.googleapis.com 차단 여부)을 확인해 주세요.')
             : err;
