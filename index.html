@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Material Analysis Studio v1.0 · 2026-11-20 · 독립 소재 분석 도구 첫 버전 (시험 데이터 · 파단면 · 미세조직 · 보고서) -->
+<!-- Material Analysis Studio v1.1 · 2026-11-20 · 시험성적서 파일→표 읽기(엑셀·CSV·PDF), AI 상담(먼저 의견 + 질문·답변) -->
 <html lang="ko"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -100,7 +100,7 @@
 
     /* Workbench: list | work area */
     .bench { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: start; }
-    .bench.three { grid-template-columns: 230px minmax(0, 1fr) 320px; }
+    .bench.three { grid-template-columns: 220px minmax(0, 1fr) 370px; }
     .list { position: sticky; top: 72px; max-height: calc(100vh - 94px); display: flex; flex-direction: column; }
     .list .panel-body { padding: 8px; overflow-y: auto; }
     .list-search { padding: 8px 8px 0; }
@@ -217,6 +217,45 @@
     .range-row input[type=range] { flex: 1; accent-color: var(--accent); }
     .ai-box { border: 1px solid #c7d2fe; background: #f5f7ff; border-radius: var(--r); padding: 10px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; max-height: 260px; overflow-y: auto; }
 
+    /* ================= v1.1 AI 상담 · 파일 읽기 ================= */
+    .side-tabs { display: flex; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 2px; flex-shrink: 0; }
+    .side-tabs button { flex: 1; background: none; border: none; border-radius: 6px; padding: 7px 4px; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+    .side-tabs button:hover { color: var(--ink); background: var(--panel-2); }
+    .side-tabs button.on { background: var(--accent); color: #fff; }
+    .dot-live { width: 7px; height: 7px; border-radius: 50%; background: #22d3ee; display: inline-block; animation: pulse 1s infinite; }
+    .chat-log { display: flex; flex-direction: column; gap: 10px; min-height: 160px; max-height: 60vh; overflow-y: auto; padding: 2px; }
+    .msg { max-width: 94%; border-radius: 10px; padding: 9px 11px; font-size: 12.5px; line-height: 1.65; word-break: break-word; }
+    .msg-text { white-space: pre-wrap; }
+    .msg.ai { background: var(--panel-2); border: 1px solid var(--line); align-self: flex-start; color: var(--ink); }
+    .msg.ai b { color: var(--ink); }
+    .msg.user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 3px; }
+    .msg.err { background: var(--fail-bg); color: var(--fail); align-self: stretch; font-size: 12px; }
+    .msg-who { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 4px; white-space: normal; }
+    .ai-dot { font-family: var(--mono); font-size: 9.5px; background: linear-gradient(135deg, #0e7490, #6d28d9); color: #fff; border-radius: 4px; padding: 1px 5px; }
+    .msg-meta { display: flex; gap: 10px; align-items: center; margin-top: 6px; font-size: 10.5px; color: var(--faint); font-family: var(--mono); white-space: nowrap; }
+    .msg-meta button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 11px; font-weight: 600; padding: 0; font-family: var(--font); white-space: nowrap; }
+    .msg-meta button:hover { text-decoration: underline; }
+    .tg { font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 3px; margin-right: 2px; }
+    .tg.obs { background: #e0f2fe; color: #075985; }
+    .tg.est { background: #fef3c7; color: #92400e; }
+    .quick { display: flex; flex-wrap: wrap; gap: 5px; }
+    .quick button { border: 1px solid var(--accent-line); background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 4px 10px; font-size: 11.5px; cursor: pointer; font-weight: 600; }
+    .quick button:hover { background: #cffafe; }
+    .quick button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .chat-input { display: flex; gap: 6px; align-items: stretch; }
+    .chat-input .btn { padding: 0 14px; }
+    .thinking { display: flex; gap: 5px; justify-content: center; padding: 8px 0; }
+    .thinking span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); animation: pulse 1.2s infinite ease-in-out; }
+    .thinking span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse { 0%, 100% { opacity: 0.25; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
+    .drop { border: 1.5px dashed var(--accent-line); background: var(--accent-soft); border-radius: 8px; padding: 12px 14px; cursor: pointer; color: var(--accent); display: flex; align-items: center; gap: 12px; text-align: left; transition: background 0.15s; }
+    .drop:hover, .drop.over { background: #cffafe; border-color: var(--accent-2); }
+    .drop i { font-size: 22px; }
+    .drop b { display: block; font-size: 13px; }
+    .drop span { display: block; font-size: 11px; color: var(--ink-2); margin-top: 2px; line-height: 1.45; }
+    .panel.imp { margin-bottom: 12px; border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+
     /* ================= REPORT ================= */
     .paper-wrap { background: #e5e8ec; border-radius: 8px; padding: 22px; overflow: auto; max-height: calc(100vh - 140px); }
     .paper { background: #fff; width: 100%; max-width: 794px; margin: 0 auto; padding: 56px 60px; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08); font-size: 12.5px; line-height: 1.7; color: #111827; }
@@ -251,6 +290,7 @@
     @media (max-width: 1280px) {
       .bench.three { grid-template-columns: 210px minmax(0, 1fr); }
       .bench.three .side-stack { grid-column: 2; position: static; max-height: none; }
+      .bench.three { grid-template-columns: 200px minmax(0, 1fr); }
     }
     @media (max-width: 1024px) {
       .bench, .bench.three { grid-template-columns: 1fr; }
@@ -323,6 +363,7 @@
 
   <input type="file" id="csvInput" accept=".csv,.tsv,.txt,text/csv" style="display:none;" onchange="handleMatCsv(event)">
   <input type="file" id="imageInput" accept="image/*" multiple style="display:none;" onchange="handleImageFiles(event)">
+  <input type="file" id="resultFileInput" accept=".xlsx,.xlsm,.xls,.ods,.csv,.tsv,.txt,.pdf,image/*" multiple style="display:none;" onchange="handleResultFiles(event)">
 
   <dialog id="confirmDlg">
     <div class="dlg-head" id="confirmTitle">확인</div>
@@ -949,22 +990,32 @@
     }
 
     // ================= 9. GEMINI (선택 기능) =================
-    async function callGemini(prompt, imageBlob) {
+    async function blobPart(blob, mime) {
+      const dataUrl = await blobToDataUrl(blob);
+      return { inline_data: { mime_type: mime || blob.type || 'image/jpeg', data: dataUrl.split(',')[1] } };
+    }
+
+    function stripFence(t) {
+      return String(t || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    }
+
+    // contents: [{ role: 'user'|'model', parts: [...] }], opts: { system, json }
+    async function callGeminiContents(contents, opts) {
+      const o = opts || {};
       const key = getAiKey();
-      if (!key) throw new Error('설정에서 API 키를 먼저 저장해 주세요.');
-      const parts = [{ text: prompt }];
-      if (imageBlob) {
-        const dataUrl = await blobToDataUrl(imageBlob);
-        parts.push({ inline_data: { mime_type: imageBlob.type || 'image/jpeg', data: dataUrl.split(',')[1] } });
-      }
+      if (!key) throw new Error('설정에서 Gemini API 키를 먼저 저장해 주세요.');
       const models = [settings.model, settings.fallbackModel].filter(Boolean);
+      if (!models.length) throw new Error('설정에서 AI 모델 이름을 입력해 주세요.');
+      const body = { contents, generationConfig: { temperature: o.json ? 0.1 : 0.4 } };
+      if (o.json) body.generationConfig.responseMimeType = 'application/json';
+      if (o.system) body.systemInstruction = { parts: [{ text: o.system }] };
       let lastErr = null;
       for (const model of models) {
         try {
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-            body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.3 } })
+            body: JSON.stringify(body)
           });
           const json = await res.json().catch(() => ({}));
           if (!res.ok) {
@@ -977,9 +1028,16 @@
           return { text, model };
         } catch (err) {
           lastErr = err;
+          if (err instanceof TypeError) lastErr = new Error('AI 서버에 연결하지 못했습니다. 인터넷 연결을 확인해 주세요.');
         }
       }
       throw lastErr || new Error('AI 호출 실패');
+    }
+
+    async function callGemini(prompt, imageBlob) {
+      const parts = [{ text: prompt }];
+      if (imageBlob) parts.push(await blobPart(imageBlob));
+      return callGeminiContents([{ role: 'user', parts }]);
     }
     // 13-7. MATERIAL LAB (소재 시험 데이터 분석)
     // 데이터셋: { id, name, testType, alloy, standard, projectId, memo, columns[], rows[][], groupCol,
@@ -1014,7 +1072,9 @@
         columns,
         rows: Array.isArray(m.rows) ? m.rows.map(r => columns.map((_, i) => (r && r[i] != null) ? String(r[i]) : '')) : [],
         specs: m.specs && typeof m.specs === 'object' ? m.specs : {},
-        fatigue: { stressCol: '', cyclesCol: '', runoutCol: '', ...(m.fatigue || {}) }
+        fatigue: { stressCol: '', cyclesCol: '', runoutCol: '', ...(m.fatigue || {}) },
+        chat: Array.isArray(m.chat) ? m.chat : [],
+        source: m.source && typeof m.source === 'object' ? m.source : null
       };
     }
 
@@ -1253,6 +1313,8 @@
               </div></div>`}
           </section>
         </div>`;
+      if (matTab === 'ai') scrollChat();
+      maybeAutoChat('tests');
     }
 
     function matMainHtml(m) {
@@ -1262,12 +1324,14 @@
         ['data', 'fa-table', '데이터', m.rows.length],
         ['stats', 'fa-calculator', '통계 · 판정', null],
         ['chart', 'fa-chart-column', '차트', null],
-        ['report', 'fa-align-left', '보고서 문구', null]
+        ['report', 'fa-align-left', '보고서 문구', null],
+        ['ai', 'fa-comments', 'AI 상담', m.chat.filter(x => x.role !== 'err').length || null]
       ];
       let body = '';
       if (matTab === 'stats') body = matStatsTabHtml(m);
       else if (matTab === 'chart') body = matChartTabHtml(m);
       else if (matTab === 'report') body = matReportTabHtml(m);
+      else if (matTab === 'ai') body = chatPanelHtml('tests', m, { maxH: '56vh' });
       else body = matDataTabHtml(m);
       return `
         <div class="meta-strip">
@@ -1313,6 +1377,7 @@
           ${m.rows.length > LIMIT ? `<p class="hint">앞 ${LIMIT}행만 표시 · 분석은 전체 ${m.rows.length}행 기준</p>` : ''}`;
 
       return `
+        ${importPreviewHtml('tests')}
         <div class="panel" style="padding:12px; background:var(--panel-2); margin-bottom:12px;">
           <div style="font-size:12px; font-weight:800; margin-bottom:4px;">엑셀에서 머리글(첫 줄)까지 선택해 복사 → 아래에 붙여넣기</div>
           <p class="hint" style="margin-bottom:8px;">
@@ -1323,7 +1388,7 @@
           <div class="inline-row" style="margin-top:8px;">
             <button class="btn primary sm" onclick="applyMatPaste('replace')"><i class="fa-solid fa-paste"></i> 붙여넣은 내용으로 바꾸기</button>
             <button class="btn sm" onclick="applyMatPaste('append')"><i class="fa-solid fa-plus"></i> 기존 데이터에 행 추가</button>
-            <button class="btn sm" onclick="document.getElementById('csvInput').click()"><i class="fa-solid fa-file-csv"></i> CSV 파일 불러오기</button>
+            <button class="btn sm" onclick="pickResultFile('tests')"><i class="fa-solid fa-file-arrow-up"></i> 파일 불러오기 (엑셀·CSV·PDF)</button>
             ${m.rows.length ? `<button class="btn sm" onclick="copyMatDataTsv()" style="margin-left:auto;"><i class="fa-regular fa-copy"></i> 현재 데이터 복사</button>` : ''}
           </div>
         </div>
@@ -2257,7 +2322,17 @@
     };
     const ANNO_COLORS = { line: '#facc15', poly: '#22d3ee', marker: '#fb7185', testline: '#a3e635', icept: '#fb923c', calib: '#ffffff' };
     const UNITS = ['μm', 'mm', 'nm'];
-    const ui = { tool: 'select', zoom: 1, img: { fracto: null, micro: null }, sel: null, draft: [], aiBusy: false, aiText: { fracto: '', micro: '' } };
+    const ui = { tool: 'select', zoom: 1, img: { fracto: null, micro: null }, side: { fracto: null, micro: null }, sel: null, draft: [], aiBusy: false, aiText: { fracto: '', micro: '' } };
+
+    // 오른쪽 패널 탭: 'ai' | 'measure' | 'judge' (키가 있으면 AI 상담이 기본)
+    function sideTab(kind) {
+      return ui.side[kind] || (getAiKey() ? 'ai' : 'measure');
+    }
+
+    function setSideTab(kind, tab) {
+      ui.side[kind] = tab;
+      render();
+    }
     const grayCache = new Map();
 
     function normalizeImageRecord(r) {
@@ -2273,7 +2348,8 @@
         id: r.id || genId('rec'),
         fields: { ...(r.fields || {}) },
         features: Array.isArray(r.features) ? r.features : [],
-        images: (Array.isArray(r.images) ? r.images : []).map(normalizeImg)
+        images: (Array.isArray(r.images) ? r.images : []).map(normalizeImg),
+        chat: Array.isArray(r.chat) ? r.chat : []
       };
     }
 
@@ -2527,9 +2603,13 @@
             </div></div>
           </section>
           <aside class="side-stack">
-            ${img ? measurePanelHtml(kind, rec, img) : ''}
-            ${kind === 'micro' && img ? thresholdPanelHtml(img) : ''}
-            ${judgePanelHtml(kind, rec)}
+            <div class="side-tabs">
+              ${[['ai', 'fa-comments', 'AI 상담'], ['measure', 'fa-ruler-combined', '측정'], ['judge', 'fa-clipboard-check', kind === 'fracto' ? '판정·소견' : '특징·소견']].map(([k, ic, lb]) =>
+                `<button class="${sideTab(kind) === k ? 'on' : ''}" onclick="setSideTab('${kind}', '${k}')"><i class="fa-solid ${ic}"></i> ${lb}${k === 'ai' && chatState.busy === rec.id ? ' <span class="dot-live"></span>' : ''}</button>`).join('')}
+            </div>
+            ${sideTab(kind) === 'ai' ? chatPanelHtml(kind, rec, { maxH: 'calc(100vh - 360px)' }) : ''}
+            ${sideTab(kind) === 'measure' ? (img ? measurePanelHtml(kind, rec, img) + (kind === 'micro' ? thresholdPanelHtml(img) : '') : '<div class="empty">이미지를 추가하면 측정 결과가 여기에 표시됩니다.</div>') : ''}
+            ${sideTab(kind) === 'judge' ? judgePanelHtml(kind, rec) : ''}
           </aside>
         </div>`;
       const v = document.getElementById('viewer');
@@ -2539,7 +2619,9 @@
       }
       const side = document.querySelector('.side-stack');
       if (side) side.scrollTop = keepSide;
+      scrollChat();
       hydrateImages(kind);
+      maybeAutoChat(kind);
     }
 
     async function hydrateImages(kind) {
@@ -3629,6 +3711,679 @@ ${ctxText}`;
       return rec;
     }
 
+    // ================= 13. 시험성적서 파일 → 표 =================
+    // 엑셀·CSV는 브라우저에서 바로 해석, PDF·이미지는 AI(Gemini)로 표 추출
+    const XLSX_CDN = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    let xlsxPromise = null;
+    // ui.imp: { target: 'report'|'tests', fileName, busy, error, parsed, sheet, hdr, name, testType }
+    ui.imp = null;
+    let impTarget = 'report';
+
+    function loadXlsx() {
+      if (window.XLSX) return Promise.resolve(window.XLSX);
+      if (!xlsxPromise) {
+        xlsxPromise = new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = XLSX_CDN;
+          s.onload = () => (window.XLSX ? resolve(window.XLSX) : reject(new Error('엑셀 해석 모듈 오류')));
+          s.onerror = () => {
+            xlsxPromise = null;
+            s.remove();
+            reject(new Error('엑셀 해석 모듈을 불러오지 못했습니다. 인터넷 연결을 확인하거나 CSV로 저장해 올려 주세요.'));
+          };
+          document.head.appendChild(s);
+        });
+      }
+      return xlsxPromise;
+    }
+
+    function fileExt(name) {
+      return (String(name || '').split('.').pop() || '').toLowerCase();
+    }
+
+    async function decodeTextFile(file) {
+      const buf = await file.arrayBuffer();
+      let text = new TextDecoder('utf-8').decode(buf);
+      if (text.includes('�')) {
+        try { text = new TextDecoder('euc-kr').decode(buf); } catch (e) {}
+      }
+      return text;
+    }
+
+    async function readResultFile(file) {
+      const ext = fileExt(file.name);
+      const base = file.name.replace(/\.[^.]+$/, '');
+      if (['csv', 'tsv', 'txt'].includes(ext)) {
+        return { title: base, method: 'CSV', sheets: [{ name: 'CSV', rows: parseDelimited(await decodeTextFile(file)) }] };
+      }
+      if (['xlsx', 'xlsm', 'xls', 'ods'].includes(ext)) {
+        const XLSX = await loadXlsx();
+        const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        const sheets = wb.SheetNames.map(n => ({
+          name: n,
+          rows: XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, defval: '', blankrows: false })
+            .map(r => r.map(c => String(c == null ? '' : c).replace(/\s*\n\s*/g, ' ').trim()))
+        })).filter(sh => sh.rows.some(r => r.some(c => c)));
+        if (!sheets.length) throw new Error('엑셀 파일에 데이터가 없습니다.');
+        return { title: base, method: '엑셀', sheets };
+      }
+      if (ext === 'pdf' || /^image\//.test(file.type) || ['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+        return await aiExtractTable(file, base, ext);
+      }
+      if (ext === 'hwp' || ext === 'hwpx') throw new Error('한글(HWP) 파일은 직접 읽을 수 없습니다. PDF나 엑셀로 저장해 올려 주세요.');
+      if (ext === 'doc' || ext === 'docx') throw new Error('워드 파일은 PDF로 저장해 올려 주세요.');
+      throw new Error('지원하지 않는 형식입니다. 엑셀·CSV·PDF·이미지 파일을 올려 주세요.');
+    }
+
+    async function aiExtractTable(file, base, ext) {
+      if (!getAiKey()) throw new Error('PDF·이미지 성적서는 AI로 읽습니다. 설정에서 Gemini API 키를 먼저 저장해 주세요. (엑셀·CSV는 키 없이 바로 읽음)');
+      if (file.size > 18 * 1048576) throw new Error('파일이 18 MB를 넘습니다. 결과 표가 있는 쪽만 PDF로 저장해 올려 주세요.');
+      const mime = ext === 'pdf' ? 'application/pdf' : (file.type || 'image/png');
+      const prompt = `첨부한 문서는 금속 소재 시험성적서 또는 시험 결과표입니다. 시험 결과 표를 찾아 아래 JSON 형식으로만 답하세요.
+{"title": "문서 제목", "testType": "tensile|hardness|impact|fatigue|custom", "material": "소재명", "standard": "시험 규격", "testDate": "YYYY-MM-DD 또는 빈 문자열", "columns": ["시편", "조건", "항복강도(MPa)"], "rows": [["S-1", "T6", "312.5"]], "notes": "평균·규격값·특이사항 요약"}
+규칙:
+- 시편(시료) 하나가 한 행이 되도록 함. 평균·표준편차·규격값 행은 rows에 넣지 말고 notes에 적음
+- 단위는 열 이름 뒤 괄호로 적고, 값에는 숫자만 넣음 (예: "항복강도(MPa)" 열에 "312.5")
+- 열처리·채취 위치처럼 시편을 묶는 정보가 있으면 "조건" 열로 넣음
+- 읽을 수 없는 칸은 빈 문자열로 두고, 추측해서 채우지 않음
+- 결과 표가 여러 개면 가장 주된 기계적 시험 결과 표 하나만 추출함`;
+      const out = await callGeminiContents([{ role: 'user', parts: [{ text: prompt }, await blobPart(file, mime)] }], { json: true });
+      let data;
+      try {
+        data = JSON.parse(stripFence(out.text));
+      } catch (e) {
+        throw new Error('AI 응답을 표로 해석하지 못했습니다. 다시 시도하거나 엑셀로 올려 주세요.');
+      }
+      const cols = Array.isArray(data.columns) ? data.columns.map(c => String(c == null ? '' : c).trim()) : [];
+      const rows = Array.isArray(data.rows) ? data.rows.map(r => (Array.isArray(r) ? r : []).map(c => String(c == null ? '' : c).trim())) : [];
+      if (!cols.length || !rows.length) throw new Error('문서에서 시험 결과 표를 찾지 못했습니다.');
+      return {
+        title: String(data.title || base),
+        method: `AI 추출 · ${out.model}`,
+        ai: true,
+        sheets: [{ name: 'AI 추출', rows: [cols, ...rows] }],
+        meta: {
+          testType: MAT_TEST_TYPES[data.testType] ? data.testType : '',
+          material: String(data.material || ''),
+          standard: String(data.standard || ''),
+          testDate: /^\d{4}-\d{2}-\d{2}$/.test(String(data.testDate || '')) ? data.testDate : '',
+          notes: String(data.notes || '')
+        }
+      };
+    }
+
+    const UNIT_RE = /^[A-Za-zμµ%°℃㎫㎛/²³·.]+$/;
+    function splitUnit(c) {
+      const m = String(c == null ? '' : c).trim().match(/^([-+]?(?:\d[\d,]*\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)\s*([A-Za-zμµ%°℃㎫㎛/²³·]+)?$/);
+      return m ? { num: m[1], unit: m[2] || '' } : { num: String(c == null ? '' : c).trim(), unit: '' };
+    }
+
+    function isNumCell(c) {
+      return !!c && !isNaN(matNum(splitUnit(c).num));
+    }
+
+    function looksUnitRow(row) {
+      const ne = (row || []).filter(c => c && c !== '-' && c !== '–');
+      return ne.length >= 1 && ne.every(c => UNIT_RE.test(c.replace(/[\[\]()\s]/g, '')) && c.replace(/[\[\]()\s]/g, '').length <= 8);
+    }
+
+    function guessHeaderRow(rows) {
+      let best = 0, bestScore = -1;
+      for (let i = 0; i < Math.min(rows.length - 1, 40); i++) {
+        const r = rows[i];
+        const text = r.filter(c => c && !isNumCell(c)).length;
+        if (text < 2) continue;
+        let j = i + 1;
+        if (rows[j] && looksUnitRow(rows[j])) j++;
+        const nums = (rows[j] || []).filter(c => isNumCell(c)).length;
+        if (nums < 1) continue;
+        const score = text * 2 + nums;
+        if (score > bestScore) {
+          bestScore = score;
+          best = i;
+        }
+      }
+      return best;
+    }
+
+    function bestSheet(sheets) {
+      let bi = 0, bn = -1;
+      sheets.forEach((sh, i) => {
+        const n = sh.rows.reduce((s, r) => s + r.filter(isNumCell).length, 0);
+        if (n > bn) { bn = n; bi = i; }
+      });
+      return bi;
+    }
+
+    const SUMMARY_ROW = /^(평균|average|avg\.?|mean|표준\s*편차|std\.?|s\.?d\.?|최대|최소|max\.?|min\.?|규격|spec\.?|기준|합계|비고|판정)/i;
+
+    function tableFromSheet(rowsIn, hdr) {
+      const rows = rowsIn.map(r => r.slice());
+      const head = (rows[hdr] || []).slice();
+      let start = hdr + 1;
+      if (rows[start] && looksUnitRow(rows[start])) {
+        rows[start].forEach((u, i) => {
+          const uu = String(u).replace(/[\[\]()]/g, '').trim();
+          if (uu && uu !== '-' && uu !== '–') head[i] = `${head[i] || `열${i + 1}`}(${uu})`;
+        });
+        start++;
+      }
+      const body = [];
+      for (let i = start; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r.some(c => c)) {
+          if (body.length) break;
+          continue;
+        }
+        body.push(r);
+      }
+      const kept = body.filter(r => !SUMMARY_ROW.test(String(r.find(c => c) || '')));
+      const width = Math.max(head.length, ...kept.map(r => r.length), 0);
+      const keepIdx = [];
+      for (let i = 0; i < width; i++) if (head[i] || kept.some(r => r[i])) keepIdx.push(i);
+      const columns = keepIdx.map(i => head[i] || `열${i + 1}`);
+      const out = kept.map(r => keepIdx.map(i => r[i] || ''));
+      // "312 MPa"처럼 값에 붙은 단위는 머리글로 옮김
+      columns.forEach((c, ci) => {
+        const units = new Set();
+        let numeric = 0;
+        out.forEach(r => {
+          const s = splitUnit(r[ci]);
+          if (!isNaN(matNum(s.num)) && s.num) {
+            numeric++;
+            if (s.unit) units.add(s.unit);
+          }
+        });
+        if (units.size === 1 && numeric) {
+          const u = [...units][0];
+          out.forEach(r => {
+            const s = splitUnit(r[ci]);
+            if (s.unit === u) r[ci] = s.num;
+          });
+          if (!matUnit(c)) columns[ci] = `${c}(${u})`;
+        }
+      });
+      return { columns: matUniqueHeaders(columns), rows: out, removed: body.length - kept.length };
+    }
+
+    function guessTestType(columns, title) {
+      const t = (columns.join(' ') + ' ' + (title || '')).toLowerCase();
+      if (/피로|fatigue|cycle|사이클|수명/.test(t)) return 'fatigue';
+      if (/인장|항복|tensile|yield|연신|uts/.test(t)) return 'tensile';
+      if (/경도|hardness|hrb|hrc|hv|hb\b|브리넬|비커스|로크웰/.test(t)) return 'hardness';
+      if (/충격|흡수\s*에너지|charpy|impact|샤르피/.test(t)) return 'impact';
+      return 'custom';
+    }
+
+    function impTable() {
+      const p = ui.imp && ui.imp.parsed;
+      if (!p) return null;
+      const sh = p.sheets[ui.imp.sheet] || p.sheets[0];
+      return tableFromSheet(sh.rows, ui.imp.hdr);
+    }
+
+    function pickResultFile(target) {
+      impTarget = target;
+      document.getElementById('resultFileInput').click();
+    }
+
+    function dropResultFile(e, target) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('over');
+      const files = [...(e.dataTransfer && e.dataTransfer.files || [])];
+      if (files.length) processResultFiles(files, target);
+    }
+
+    async function handleResultFiles(e) {
+      const files = [...e.target.files];
+      e.target.value = '';
+      if (files.length) processResultFiles(files, impTarget);
+    }
+
+    async function processResultFiles(files, target) {
+      if (files.length === 1) {
+        const f = files[0];
+        ui.imp = { target, fileName: f.name, busy: true, error: '', parsed: null, sheet: 0, hdr: 0, name: '', testType: 'custom' };
+        render();
+        try {
+          const parsed = await readResultFile(f);
+          const sheet = bestSheet(parsed.sheets);
+          const hdr = guessHeaderRow(parsed.sheets[sheet].rows);
+          ui.imp = { ...ui.imp, busy: false, parsed, sheet, hdr, name: parsed.title };
+          const t = impTable();
+          ui.imp.testType = (parsed.meta && parsed.meta.testType) || guessTestType(t.columns, parsed.title);
+        } catch (err) {
+          ui.imp = { ...ui.imp, busy: false, error: err.message || String(err) };
+        }
+        render();
+        return;
+      }
+      // 여러 파일: 자동 인식으로 한 번에 넣기
+      showToast(`파일 ${files.length}개를 읽는 중...`);
+      let ok = 0;
+      const fails = [];
+      for (const f of files) {
+        try {
+          const parsed = await readResultFile(f);
+          const sheet = bestSheet(parsed.sheets);
+          const t = tableFromSheet(parsed.sheets[sheet].rows, guessHeaderRow(parsed.sheets[sheet].rows));
+          if (!t.rows.length) throw new Error('데이터 행 없음');
+          saveImportedTable(parsed, t, parsed.title, (parsed.meta && parsed.meta.testType) || guessTestType(t.columns, parsed.title), target, true);
+          ok++;
+        } catch (err) {
+          fails.push(`${f.name}: ${err.message || err}`);
+        }
+      }
+      render();
+      showToast(`${ok}개 파일을 표로 넣었습니다.${fails.length ? ` 실패 ${fails.length}개 — ${fails[0]}` : ''}`);
+    }
+
+    function saveImportedTable(parsed, t, name, testType, target, silent) {
+      const meta = parsed.meta || {};
+      const memo = [`원본 파일: ${ui.imp && ui.imp.fileName ? ui.imp.fileName : parsed.title} (${parsed.method})`, meta.notes ? `성적서 비고: ${meta.notes}` : ''].filter(Boolean).join('\n');
+      if (target === 'tests' && activeMaterial() && !silent) {
+        const m = activeMaterial();
+        m.columns = t.columns;
+        m.rows = t.rows;
+        if (!m.alloy && meta.material) m.alloy = meta.material;
+        if (meta.standard && (!m.standard || m.standard === (MAT_TEST_TYPES[m.testType] || {}).std)) m.standard = meta.standard;
+        if (!m.testDate && meta.testDate) m.testDate = meta.testDate;
+        m.testType = testType;
+        if (!m.standard) m.standard = (MAT_TEST_TYPES[testType] || {}).std || '';
+        if (m.name === '새 시험 데이터') m.name = name;
+        m.memo = (m.memo ? m.memo + '\n' : '') + memo;
+        m.source = { fileName: ui.imp ? ui.imp.fileName : '', method: parsed.method };
+        Object.keys(m.specs).forEach(k => { if (!t.columns.includes(k)) delete m.specs[k]; });
+        m.groupCol = matGuessGroupCol(m);
+        matGuessFatigue(m);
+        touchMaterial(m);
+        saveData();
+        return m;
+      }
+      const m = normalizeMaterialSet({
+        name: name || parsed.title, testType,
+        alloy: meta.material || '', standard: meta.standard || (MAT_TEST_TYPES[testType] || {}).std || '', testDate: meta.testDate || '',
+        columns: t.columns, rows: t.rows, memo,
+        source: { fileName: ui.imp ? ui.imp.fileName : parsed.title, method: parsed.method }
+      });
+      m.groupCol = matGuessGroupCol(m);
+      matGuessFatigue(m);
+      DB.tests.unshift(m);
+      if (target === 'report') {
+        let r = activeReport();
+        if (!r) r = createReport();
+        if (!r.include.tests.includes(m.id)) r.include.tests.push(m.id);
+        touch(r);
+      } else {
+        active.tests = m.id;
+      }
+      saveData();
+      return m;
+    }
+
+    function confirmImport() {
+      const imp = ui.imp;
+      const t = impTable();
+      if (!imp || !t) return;
+      if (!t.rows.length) {
+        showToast('데이터 행이 없습니다. 머리글 행 위치를 확인해 주세요.');
+        return;
+      }
+      const doIt = () => {
+        const m = saveImportedTable(imp.parsed, t, imp.name.trim() || imp.parsed.title, imp.testType, imp.target);
+        ui.imp = null;
+        if (imp.target === 'tests') matTab = 'data';
+        render();
+        showToast(imp.target === 'report'
+          ? `'${m.name}' 표(${m.rows.length}행)를 보고서에 넣었습니다. 목표 규격은 시험 데이터 메뉴에서 넣을 수 있습니다.`
+          : `'${m.name}' ${m.rows.length}행을 불러왔습니다. 통계·판정 탭에서 목표값을 넣으세요.`);
+      };
+      const cur = activeMaterial();
+      if (imp.target === 'tests' && cur && cur.rows.length) {
+        askConfirm(`현재 데이터 ${cur.rows.length}행을 '${imp.fileName}' 내용으로 바꿉니다. 계속하시겠습니까?`, doIt, { okLabel: '바꾸기' });
+      } else doIt();
+    }
+
+    function setImp(field, value) {
+      if (!ui.imp) return;
+      if (field === 'sheet') {
+        ui.imp.sheet = Number(value) || 0;
+        ui.imp.hdr = guessHeaderRow(ui.imp.parsed.sheets[ui.imp.sheet].rows);
+      } else if (field === 'hdr') {
+        const max = ui.imp.parsed.sheets[ui.imp.sheet].rows.length - 1;
+        ui.imp.hdr = Math.max(0, Math.min(max, Number(value) || 0));
+      } else ui.imp[field] = value;
+      render();
+    }
+
+    function closeImp() {
+      ui.imp = null;
+      render();
+    }
+
+    function dropZoneHtml(target, compact) {
+      return `
+        <div class="drop ${compact ? 'compact' : ''}" onclick="pickResultFile('${target}')"
+             ondragover="event.preventDefault(); this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="dropResultFile(event, '${target}')">
+          <i class="fa-solid fa-file-arrow-up"></i>
+          <div><b>시험성적서 파일 넣기</b><span>엑셀·CSV는 바로 읽고, PDF·사진은 AI가 표로 읽음 · 끌어다 놓기 가능</span></div>
+        </div>`;
+    }
+
+    function importPreviewHtml(target) {
+      const imp = ui.imp;
+      if (!imp || imp.target !== target) return '';
+      const head = `<div class="panel-head"><h2><i class="fa-solid fa-table-list"></i> 파일 읽기 <span class="mono">${escapeHtml(imp.fileName)}</span></h2><button class="icon-btn" onclick="closeImp()" title="닫기"><i class="fa-solid fa-xmark"></i></button></div>`;
+      if (imp.busy) {
+        return `<section class="panel imp no-print">${head}<div class="panel-body"><div class="thinking"><span></span><span></span><span></span></div>
+          <p class="hint" style="text-align:center;">${/\.(pdf|png|jpe?g|webp)$/i.test(imp.fileName) ? 'AI가 성적서에서 결과 표를 찾는 중입니다… (10~30초)' : '파일을 읽는 중입니다…'}</p></div></section>`;
+      }
+      if (imp.error) {
+        return `<section class="panel imp no-print">${head}<div class="panel-body">
+          <div class="judge fail" style="white-space:normal; padding:8px 10px; display:flex;"><i class="fa-solid fa-circle-exclamation"></i> ${escapeHtml(imp.error)}</div>
+          <div class="row" style="margin-top:10px;"><button class="btn sm" onclick="pickResultFile('${target}')"><i class="fa-solid fa-rotate"></i> 다른 파일 선택</button>
+          ${/API 키/.test(imp.error) ? `<button class="btn sm" onclick="go('settings')"><i class="fa-solid fa-gear"></i> AI 설정</button>` : ''}</div>
+        </div></section>`;
+      }
+      const p = imp.parsed;
+      const sh = p.sheets[imp.sheet];
+      const t = impTable();
+      const nums = new Set(matNumericCols({ columns: t.columns, rows: t.rows }));
+      const typeOpts = Object.keys(MAT_TEST_TYPES).map(k => `<option value="${k}" ${k === imp.testType ? 'selected' : ''}>${MAT_TEST_TYPES[k].label}</option>`).join('');
+      const meta = p.meta || {};
+      const LIM = 12;
+      return `
+        <section class="panel imp no-print">
+          ${head}
+          <div class="panel-body" style="display:flex; flex-direction:column; gap:10px;">
+            <div class="row" style="gap:6px;"><span class="judge pass"><i class="fa-solid fa-check"></i> ${escapeHtml(p.method)}</span>
+              <span class="hint">${t.rows.length}행 × ${t.columns.length}열 · 숫자 열 ${nums.size}개${t.removed ? ` · 평균·규격 등 요약 행 ${t.removed}개 제외` : ''}</span></div>
+            <div class="grid-3" style="grid-template-columns: 2fr 1fr 1fr;">
+              <div class="field"><label>데이터 이름</label><input class="input" value="${escapeHtml(imp.name)}" onchange="setImp('name', this.value)"></div>
+              <div class="field"><label>시험 종류</label><select class="select" onchange="setImp('testType', this.value)">${typeOpts}</select></div>
+              <div class="field"><label>머리글 행 ${p.ai ? '' : '(표 첫 줄)'}</label>
+                <div class="row" style="flex-wrap:nowrap; gap:4px;">
+                  <button class="btn sm" onclick="setImp('hdr', ${imp.hdr - 1})" ${imp.hdr <= 0 ? 'disabled' : ''}>−</button>
+                  <input class="input mono" style="text-align:center;" value="${imp.hdr + 1}" onchange="setImp('hdr', Number(this.value) - 1)">
+                  <button class="btn sm" onclick="setImp('hdr', ${imp.hdr + 1})">+</button>
+                </div>
+              </div>
+            </div>
+            ${p.sheets.length > 1 ? `<div class="field"><label>시트</label><div class="seg">${p.sheets.map((s, i) => `<button class="${i === imp.sheet ? 'on' : ''}" onclick="setImp('sheet', ${i})">${escapeHtml(s.name)}</button>`).join('')}</div></div>` : ''}
+            ${meta.material || meta.standard || meta.testDate ? `<p class="hint">AI가 읽은 정보: ${[meta.material && `소재 ${meta.material}`, meta.standard && `규격 ${meta.standard}`, meta.testDate && `시험일 ${meta.testDate}`].filter(Boolean).map(escapeHtml).join(' · ')}</p>` : ''}
+            ${meta.notes ? `<p class="hint">성적서 비고: ${escapeHtml(meta.notes)}</p>` : ''}
+            ${t.rows.length ? `
+            <div class="tbl-wrap" style="max-height:300px;">
+              <table class="tbl"><thead><tr>${t.columns.map((c, i) => `<th class="${nums.has(i) ? 'num' : ''}">${escapeHtml(c)}${nums.has(i) ? '<span class="tag">숫자</span>' : ''}</th>`).join('')}</tr></thead>
+              <tbody>${t.rows.slice(0, LIM).map(r => `<tr>${r.map((v, i) => `<td class="${nums.has(i) ? 'num' : ''}">${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+            </div>
+            ${t.rows.length > LIM ? `<p class="hint">외 ${t.rows.length - LIM}행</p>` : ''}` : `<div class="empty">이 위치에서 데이터 행을 찾지 못했습니다. 머리글 행을 조정해 보세요.</div>`}
+            <p class="hint">${p.ai ? 'AI 추출 결과는 원본 성적서와 숫자를 대조해 주세요.' : '머리글이 맞지 않으면 위에서 머리글 행을 바꾸세요. 빈 줄을 뺀 순서 기준입니다.'}</p>
+            <div class="row">
+              <button class="btn primary" onclick="confirmImport()" ${t.rows.length ? '' : 'disabled'}><i class="fa-solid fa-check"></i> ${target === 'report' ? '이 표를 보고서에 넣기' : '이 표로 불러오기'}</button>
+              <button class="btn" onclick="closeImp()">취소</button>
+            </div>
+          </div>
+        </section>`;
+    }
+
+    // ================= 14. AI 상담 (먼저 의견 → 질문·답변) =================
+    // 기록.chat: [{ role: 'ai'|'user'|'err', text, ts, model }]
+    const CHAT_QUICK = {
+      fracto: ['왜 파손됐을까?', '파단 기점은 어디로 보여?', '피로 파괴가 맞아? 근거는?', '재발 방지 대책은?', '원인 확정에 필요한 추가 분석은?'],
+      micro: ['이 조직은 정상 범위야?', '조대립·이상 조직의 원인은?', '열처리 조건은 적절해 보여?', '강도·피로에 어떤 영향이 있어?', '추가로 어떤 분석이 필요해?'],
+      tests: ['결과를 어떻게 해석해야 해?', '목표 미달 원인은?', '조건 간 차이가 의미 있는 수준이야?', '개선하려면 무엇을 바꿔야 해?', '추가로 어떤 시험이 필요해?']
+    };
+    const CHAT_SYSTEM = `당신은 금속 소재 시험·파손 분석(fractography)·미세조직 분석 전문가로서 연구원과 상담합니다.
+- 한국어로 답하고 핵심부터 간결하게 씁니다. 목록은 '- '로 시작하고, 소제목은 **굵게** 씁니다.
+- 이미지나 입력값으로 확인되는 내용은 [관찰], 해석·추정은 [추정]으로 구분하고, 추정에는 확신도(상/중/하)를 붙입니다.
+- 이미지 해상도·배율·자료 부족으로 판단할 수 없는 것은 그렇다고 말하고, 필요한 추가 자료를 요청합니다.
+- 불확실한 내용을 사실처럼 단정하지 않습니다. 최종 판정은 분석자의 확인이 필요하다는 전제로 말합니다.
+- 분석자가 이미지에 표시한 주석을 참고합니다: 노란 선 = 길이 측정, 청록 영역 = 면적 영역, 분홍 원 = 주석(번호·종류), 연두 점선 = 절편법 시험선, 주황 X = 교차점, 청록 점 = 점 계수 표시, 흰 점선 = 스케일 보정선.
+- 답변은 보통 15줄 이내로 합니다.`;
+    const CHAT_FIRST = {
+      fracto: `질문을 받기 전에, 먼저 이 파단면에 대한 당신의 의견을 제시하세요. 아래 순서로 씁니다.
+**종합 의견** (2~3줄)
+**파괴 양상** — 판단과 근거
+**파단 기점** — 추정 위치와 근거
+**추정 파손 원인** — 가능성 높은 순 2~3개, 각각 근거와 확신도
+**추가 확인 권장** — 원인을 확정하려면 필요한 분석·자료
+마지막 줄에 원인 판단을 좁히기 위해 분석자에게 묻고 싶은 질문 1개를 남기세요.`,
+      micro: `질문을 받기 전에, 먼저 이 미세조직에 대한 당신의 의견을 제시하세요. 아래 순서로 씁니다.
+**종합 의견** (2~3줄)
+**조직 특징** — 결정립 형태·크기 분포, 제2상·석출물·기공·개재물
+**측정값 해석** — 결정립도·상분율·면적률이 있으면 그 의미와 신뢰도
+**공정 · 열처리와의 연관** — 입력된 조건으로 설명되는 점과 이상 징후
+**특성 영향** — 강도·인성·피로에 미칠 영향
+**추가 확인 권장**
+마지막 줄에 해석을 좁히기 위해 분석자에게 묻고 싶은 질문 1개를 남기세요.`,
+      tests: `질문을 받기 전에, 먼저 이 시험 결과에 대한 당신의 의견을 제시하세요. 아래 순서로 씁니다.
+**종합 의견** (2~3줄)
+**조건별 결과 해석** — 평균·편차의 의미
+**목표 대비 평가** — 미달·이탈 항목과 그 정도
+**차이의 원인 추정** — 가능성 높은 순 2~3개, 확신도
+**개선 방향 · 추가 시험 권장**
+마지막 줄에 해석을 좁히기 위해 분석자에게 묻고 싶은 질문 1개를 남기세요.`
+    };
+    const chatState = { busy: null, auto: new Set() };
+
+    function chatRecord(kind) {
+      return kind === 'tests' ? activeMaterial() : moduleRec(kind);
+    }
+
+    function chatReady(kind, rec) {
+      if (!rec) return false;
+      return kind === 'tests' ? rec.rows.length > 0 && matNumericCols(rec).length > 0 : rec.images.length > 0;
+    }
+
+    function chatContextText(kind, rec) {
+      if (kind === 'fracto') return fractoText(rec);
+      if (kind === 'micro') return microText(rec);
+      const rep = matBuildReport(rec).text;
+      const lim = 80;
+      const data = [rec.columns, ...rec.rows.slice(0, lim)].map(r => r.join('\t')).join('\n');
+      const specs = Object.entries(rec.specs).map(([k, v]) => `${k}: ${matSpecLabel(v, '')}`).join(', ');
+      return `${rep}\n\n[목표 규격] ${specs || '미입력'}\n\n[원시 데이터${rec.rows.length > lim ? ` 앞 ${lim}행 / 전체 ${rec.rows.length}행` : ''}]\n${data}`;
+    }
+
+    async function chatImageParts(rec) {
+      const parts = [];
+      for (const [i, im] of rec.images.slice(0, 3).entries()) {
+        try {
+          const c = await renderAnnotatedCanvas(im, 1400);
+          if (!c) continue;
+          const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.88));
+          parts.push({ text: `[이미지 ${i + 1}: ${im.name} · ${im.w}×${im.h}px · ${im.calib ? `1 ${im.calib.unit} = ${fmtSig(im.calib.pxPerUnit)} px` : '스케일 미보정'}]` });
+          parts.push(await blobPart(blob, 'image/jpeg'));
+        } catch (e) {
+          console.warn('AI용 이미지 준비 실패', e);
+        }
+      }
+      if (rec.images.length > 3) parts.push({ text: `(이미지는 총 ${rec.images.length}장이며 앞 3장만 첨부함)` });
+      return parts;
+    }
+
+    function buildChatContents(kind, rec, ctxText, imgParts) {
+      const msgs = rec.chat.filter(m => m.role === 'ai' || m.role === 'user');
+      const first = [{ text: `[분석 정보 — 현재 입력값]\n${ctxText}` }, ...imgParts];
+      const contents = [];
+      let i = 0;
+      if (msgs.length && msgs[0].role === 'user') {
+        first.push({ text: msgs[0].text });
+        i = 1;
+      } else {
+        first.push({ text: CHAT_FIRST[kind] });
+      }
+      contents.push({ role: 'user', parts: first });
+      for (; i < msgs.length; i++) {
+        const role = msgs[i].role === 'ai' ? 'model' : 'user';
+        const last = contents[contents.length - 1];
+        if (last.role === role) last.parts.push({ text: msgs[i].text });
+        else contents.push({ role, parts: [{ text: msgs[i].text }] });
+      }
+      return contents;
+    }
+
+    async function chatSend(kind, question) {
+      const rec = chatRecord(kind);
+      if (!rec || chatState.busy) return;
+      if (!getAiKey()) {
+        showToast('설정에서 Gemini API 키를 먼저 저장해 주세요.');
+        return;
+      }
+      if (question !== null && question !== undefined) {
+        const q = String(question).trim();
+        if (!q) return;
+        rec.chat.push({ role: 'user', text: q, ts: Date.now() });
+      }
+      chatState.busy = rec.id;
+      touch(rec);
+      saveData();
+      render();
+      scrollChat();
+      try {
+        const ctx = chatContextText(kind, rec);
+        const imgs = kind === 'tests' ? [] : await chatImageParts(rec);
+        const out = await callGeminiContents(buildChatContents(kind, rec, ctx, imgs), { system: CHAT_SYSTEM });
+        rec.chat.push({ role: 'ai', text: out.text, ts: Date.now(), model: out.model });
+      } catch (err) {
+        rec.chat.push({ role: 'err', text: 'AI 응답 실패: ' + (err.message || err), ts: Date.now() });
+      } finally {
+        chatState.busy = null;
+        touch(rec);
+        saveData();
+        if (chatRecord(kind) === rec && view === kind) {
+          render();
+          scrollChat();
+        }
+      }
+    }
+
+    function chatAsk(kind) {
+      const ta = document.getElementById('chatInput');
+      if (!ta) return;
+      const q = ta.value;
+      ta.value = '';
+      chatSend(kind, q);
+    }
+
+    function chatQuick(kind, idx) {
+      chatSend(kind, CHAT_QUICK[kind][idx]);
+    }
+
+    function chatRefresh(kind) {
+      const rec = chatRecord(kind);
+      if (!rec) return;
+      if (!rec.chat.length) chatSend(kind, null);
+      else chatSend(kind, '지금까지의 대화와 현재 입력값(측정·주석·소견)을 반영해서 의견을 다시 정리해 주세요. 처음 의견과 달라진 점이 있으면 표시해 주세요.');
+    }
+
+    function chatClear(kind) {
+      const rec = chatRecord(kind);
+      if (!rec || !rec.chat.length) return;
+      askConfirm('이 기록의 AI 상담 내용을 모두 지우시겠습니까?', () => {
+        rec.chat = [];
+        chatState.auto.add(rec.id);
+        touch(rec);
+        saveData();
+        render();
+      }, { okLabel: '지우기', danger: true });
+    }
+
+    function chatToNote(kind, idx) {
+      const rec = chatRecord(kind);
+      const msg = rec && rec.chat[idx];
+      if (!msg) return;
+      const clean = msg.text.replace(/\*\*/g, '').replace(/^#+\s*/gm, '').trim();
+      if (kind === 'tests') {
+        rec.memo = (rec.memo.trim() ? rec.memo.trim() + '\n' : '') + clean;
+        touchMaterial(rec);
+      } else {
+        rec.observation = (rec.observation.trim() ? rec.observation.trim() + '\n' : '') + clean;
+        touch(rec);
+      }
+      saveData();
+      render();
+      showToast(kind === 'tests' ? 'AI 답변을 시험 메모에 넣었습니다. 보고서 비고로 나갑니다.' : 'AI 답변을 관찰 소견에 넣었습니다. 사실과 다른 부분은 고쳐 주세요.');
+    }
+
+    function chatCopy(kind, idx) {
+      const rec = chatRecord(kind);
+      const msg = rec && rec.chat[idx];
+      if (msg) copyText(msg.text.replace(/\*\*/g, '')).then(ok => showToast(ok ? '답변을 복사했습니다.' : '복사에 실패했습니다.'));
+    }
+
+    function scrollChat() {
+      const log = document.getElementById('chatLog');
+      if (log) log.scrollTop = log.scrollHeight;
+    }
+
+    function chatMd(text) {
+      return escapeHtml(text)
+        .replace(/^#{1,4}\s*(.+)$/gm, '<b>$1</b>')
+        .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+        .replace(/^\s*\*\s+/gm, '- ')
+        .replace(/\[관찰\]/g, '<span class="tg obs">관찰</span>')
+        .replace(/\[추정\]/g, '<span class="tg est">추정</span>');
+    }
+
+    function chatPanelHtml(kind, rec, opts) {
+      const o = opts || {};
+      const hasKey = !!getAiKey();
+      const ready = chatReady(kind, rec);
+      const busy = chatState.busy === rec.id;
+      const what = { fracto: '파단면 이미지를 올리면', micro: '미세조직 이미지를 올리면', tests: '시험 데이터를 넣으면' }[kind];
+      let body;
+      if (!hasKey) {
+        body = `<div class="empty">AI 상담은 Gemini API 키가 필요합니다.<br>키를 저장하면 ${what} AI가 먼저 의견을 드리고, 이어서 질문할 수 있습니다.<br><br><button class="btn primary sm" onclick="go('settings')"><i class="fa-solid fa-gear"></i> AI 설정</button></div>`;
+      } else if (!ready && !rec.chat.length) {
+        body = `<div class="empty">${what} AI가 먼저 ${kind === 'fracto' ? '파손 원인에 대한' : '해석'} 의견을 드립니다.</div>`;
+      } else {
+        const msgs = rec.chat.map((m, i) => {
+          if (m.role === 'user') return `<div class="msg user"><div class="msg-text">${escapeHtml(m.text)}</div></div>`;
+          if (m.role === 'err') return `<div class="msg err"><i class="fa-solid fa-circle-exclamation"></i> ${escapeHtml(m.text)}</div>`;
+          return `<div class="msg ai"><div class="msg-who"><span class="ai-dot">AI</span>${i === 0 ? '먼저 드리는 의견' : '답변'}</div><div class="msg-text">${chatMd(m.text)}</div>` +
+            `<div class="msg-meta"><span title="${escapeHtml(m.model || '')}">${fmtDate(m.ts)}</span><span class="spacer"></span>` +
+            `<button onclick="chatToNote('${kind}', ${i})"><i class="fa-solid fa-arrow-down"></i> ${kind === 'tests' ? '메모에' : '소견에'} 넣기</button>` +
+            `<button onclick="chatCopy('${kind}', ${i})"><i class="fa-regular fa-copy"></i> 복사</button></div></div>`;
+        }).join('');
+        body = `
+          <div class="chat-log" id="chatLog" style="${o.maxH ? `max-height:${o.maxH};` : ''}">
+            ${msgs || ''}
+            ${busy ? `<div class="msg ai"><div class="msg-who"><span class="ai-dot">AI</span>${rec.chat.length ? '답변 작성 중' : '이미지와 입력값을 보고 의견을 정리하는 중'}</div><div class="thinking"><span></span><span></span><span></span></div></div>` : ''}
+          </div>
+          <div class="quick">${CHAT_QUICK[kind].map((q, i) => `<button onclick="chatQuick('${kind}', ${i})" ${busy ? 'disabled' : ''}>${q}</button>`).join('')}</div>
+          <div class="chat-input">
+            <textarea class="textarea" id="chatInput" rows="2" placeholder="AI에게 질문하기 (Enter 전송 · Shift+Enter 줄바꿈)" onkeydown="if(event.key==='Enter' && !event.shiftKey && !event.isComposing){event.preventDefault(); chatAsk('${kind}');}" ${busy ? 'disabled' : ''}></textarea>
+            <button class="btn primary" onclick="chatAsk('${kind}')" ${busy ? 'disabled' : ''} title="보내기"><i class="fa-solid fa-paper-plane"></i></button>
+          </div>`;
+      }
+      return `
+        <section class="panel chat">
+          <div class="panel-head">
+            <h2><i class="fa-solid fa-comments"></i> AI 상담 ${rec.chat.length ? `<span class="mono">${rec.chat.filter(m => m.role !== 'err').length}</span>` : ''}</h2>
+            <div class="row" style="gap:2px;">
+              ${hasKey && ready ? `<button class="btn sm ghost" onclick="chatRefresh('${kind}')" ${busy ? 'disabled' : ''} title="현재 입력값으로 의견 다시 받기"><i class="fa-solid fa-rotate"></i> ${rec.chat.length ? '다시 정리' : '의견 받기'}</button>` : ''}
+              ${rec.chat.length ? `<button class="btn sm ghost" onclick="chatClear('${kind}')" title="대화 지우기"><i class="fa-regular fa-trash-can"></i></button>` : ''}
+            </div>
+          </div>
+          <div class="panel-body" style="display:flex; flex-direction:column; gap:10px;">
+            ${body}
+            ${hasKey ? `<p class="hint" style="font-size:10.5px;">AI 의견은 참고용입니다. 이미지·측정값·입력 정보를 함께 보내며, 결론은 직접 확인 후 사용하세요.</p>` : ''}
+          </div>
+        </section>`;
+    }
+
+    // 상담 화면이 열려 있고 대화가 없으면 AI가 먼저 의견을 낸다 (기록당 1회 자동)
+    function maybeAutoChat(kind) {
+      const rec = chatRecord(kind);
+      if (!rec || rec.chat.length || chatState.busy || !getAiKey() || !chatReady(kind, rec)) return;
+      const visible = kind === 'tests' ? matTab === 'ai' : sideTab(kind) === 'ai';
+      if (!visible || chatState.auto.has(rec.id)) return;
+      chatState.auto.add(rec.id);
+      setTimeout(() => chatSend(kind, null), 30);
+    }
+
     // ================= 12. REPORT BUILDER =================
     // Report: { id, title, docNo, date, author, org, purpose, sampleInfo, conclusion,
     //           include: { tests: [], fracto: [], micro: [] }, opts: { charts, images, maxImages }, createdAt, updatedAt }
@@ -3695,8 +4450,10 @@ ${ctxText}`;
         main.innerHTML = `<div class="bench">${list}<section class="panel"><div class="panel-body"><div class="empty" style="padding:44px 20px;">
           <i class="fa-solid fa-file-lines" style="font-size:26px; color:var(--accent); margin-bottom:10px; display:block;"></i>
           <strong style="color:var(--ink); font-size:14px;">시험·분석 기록을 묶어 보고서를 만드세요</strong><br>
-          시험 데이터, 파단면, 미세조직 기록을 골라 넣으면 개조식 본문·결과표·차트·주석 이미지가 들어간 보고서가 만들어집니다.<br>인쇄 화면에서 PDF로 저장할 수 있습니다.<br><br>
+          시험 데이터, 파단면, 미세조직 기록을 골라 넣으면 개조식 본문·결과표·차트·주석 이미지가 들어간 보고서가 만들어집니다.<br>시험성적서 파일(엑셀·CSV·PDF)을 바로 올려 표로 넣을 수도 있습니다.<br><br>
           <button class="btn primary" onclick="createReport(); render();"><i class="fa-solid fa-plus"></i> 새 보고서</button>
+          <div style="max-width:420px; margin:14px auto 0;">${dropZoneHtml('report')}</div>
+          ${importPreviewHtml('report') ? `<div style="text-align:left; margin-top:12px;">${importPreviewHtml('report')}</div>` : ''}
         </div></div></section></div>`;
         return;
       }
@@ -3717,6 +4474,7 @@ ${ctxText}`;
                 <button class="btn sm danger" onclick="deleteReport('${r.id}')" title="보고서 삭제"><i class="fa-regular fa-trash-can"></i></button>
               </div>
               <div class="panel-body" style="display:flex; flex-direction:column; gap:10px;">
+                ${dropZoneHtml('report')}
                 <div class="field"><label>제목</label><input class="input" style="font-weight:700;" value="${escapeHtml(r.title)}" onchange="updateReportField('title', this.value)"></div>
                 <div class="grid-2">
                   <div class="field"><label>문서 번호</label><input class="input mono" value="${escapeHtml(r.docNo)}" placeholder="선택" onchange="updateReportField('docNo', this.value)"></div>
@@ -3749,6 +4507,7 @@ ${ctxText}`;
                 <span class="spacer"></span>
                 <span class="hint">A4 미리보기 · 인쇄 창에서 'PDF로 저장' 선택</span>
               </div>
+              ${importPreviewHtml('report')}
               <div class="paper-wrap"><article class="paper" id="paper"><p class="hint" style="text-align:center;">보고서를 만드는 중...</p></article></div>
             </section>
           </div>
