@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Material Analysis Studio v1.2 · 2026-11-23 · AI 연결 테스트·모델 자동 선택, 오류 원인별 안내, 상담 다시 시도 -->
+<!-- Material Analysis Studio v1.3 · 2026-11-23 · 기록 1건 PDF 만들기(파단면·미세조직·시험 데이터, AI 상담 부록 선택) -->
 <html lang="ko"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -275,8 +275,14 @@
     .paper td small.bad { color: #b91c1c; font-weight: 700; }
     .paper figure { margin: 10px 0 14px; text-align: center; break-inside: avoid; }
     .paper figure img, .paper figure svg { max-width: 100%; border: 1px solid #d1d5db; }
+    .paper figure img { max-height: 380px; width: auto; }
+    .paper h2, .paper h3 { break-after: avoid; page-break-after: avoid; }
     .paper figcaption { font-size: 11px; color: #4b5563; margin-top: 4px; }
     .paper .fig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .paper .qa-q { font-weight: 700; margin: 10px 0 4px; }
+    .paper .qa-a { white-space: pre-wrap; background: #f8fafc; border-left: 3px solid #94a3b8; padding: 6px 10px; margin-bottom: 6px; font-size: 11.5px; break-inside: avoid; }
+    .paper .qa-tag { display: block; font-size: 10px; color: #64748b; font-weight: 700; margin-bottom: 2px; }
+    #printArea { display: none; }
     .paper .note { font-size: 10.5px; color: #6b7280; margin-top: 18px; border-top: 1px solid #e5e7eb; padding-top: 8px; }
 
     /* ================= DIALOG / TOAST / TIP ================= */
@@ -333,6 +339,8 @@
       .bench { display: block; }
       .paper-wrap { background: none; padding: 0; max-height: none; overflow: visible; border-radius: 0; }
       .paper { box-shadow: none; padding: 0; max-width: none; }
+      body.print-single > * { display: none !important; }
+      body.print-single > #printArea { display: block !important; }
     }
   </style>
 </head>
@@ -389,6 +397,7 @@
 
   <div id="toast"></div>
   <div id="tip"></div>
+  <div id="printArea"></div>
   <script>
     // ================= 1. STATE =================
     const APP_ID = 'material-analysis-studio';
@@ -1475,6 +1484,7 @@
         <div class="tabs">
           ${tabs.map(([k, ic, label, cnt]) => `<button class="tab ${matTab === k ? 'active' : ''}" onclick="setMatTab('${k}')"><i class="fa-solid ${ic}"></i> ${label}${cnt !== null ? ` <span class="count">${cnt}</span>` : ''}</button>`).join('')}
           <span class="spacer"></span>
+          <button class="tab" onclick="exportRecordPdf('tests', '${m.id}')" title="이 시험 결과를 PDF로"><i class="fa-solid fa-file-pdf"></i> PDF</button>
           <button class="tab" onclick="addToReport('tests', '${m.id}')" title="보고서에 이 시험 데이터 넣기"><i class="fa-solid fa-file-circle-plus"></i> 보고서에</button>
           <button class="tab" style="color:var(--fail);" onclick="deleteMaterialSet('${m.id}')"><i class="fa-regular fa-trash-can"></i> 삭제</button>
         </div>
@@ -2716,6 +2726,7 @@
             <div class="panel"><div class="panel-body" style="padding:12px 14px;">
               <div class="row" style="margin-bottom:10px; flex-wrap:nowrap;">
                 <input class="input" style="font-weight:700; font-size:14px; flex:1;" value="${escapeHtml(rec.name)}" onchange="updateRec('${kind}', 'name', this.value)">
+                <button class="btn sm" onclick="exportRecordPdf('${kind}', '${rec.id}')" title="이 기록의 소견·측정·이미지를 PDF로"><i class="fa-solid fa-file-pdf"></i> PDF</button>
                 <button class="btn sm" onclick="addToReport('${kind}', '${rec.id}')" title="보고서에 넣기"><i class="fa-solid fa-file-circle-plus"></i> 보고서에</button>
                 <button class="btn sm danger" onclick="deleteImageRecord('${kind}', '${rec.id}')" title="기록 삭제"><i class="fa-regular fa-trash-can"></i></button>
               </div>
@@ -4759,6 +4770,8 @@ ${ctxText}`;
       h.push(`<h1>${escapeHtml(r.title)}</h1>`);
       h.push(`<div class="p-sub">${[r.docNo, r.date, [r.org, r.author].filter(Boolean).join(' ')].filter(Boolean).map(escapeHtml).join(' · ')}</div>`);
 
+      // 기록 1건 PDF(opts.single)는 개요 대신 바로 본문으로 들어감
+      if (!r.opts.single) {
       h.push(`<h2>${sec++}. 개요</h2>`);
       if (r.purpose.trim()) {
         h.push('<h3>가. 목적</h3>');
@@ -4772,6 +4785,7 @@ ${ctxText}`;
         it.fracto.forEach(x => auto.push(`파단면 분석: ${x.name}${x.fields.sample ? ` (${x.fields.sample})` : ''}${x.fields.equipment ? ` — ${x.fields.equipment}` : ''}`));
         it.micro.forEach(x => auto.push(`미세조직 분석: ${x.name}${x.fields.sample ? ` (${x.fields.sample})` : ''}${x.fields.equipment ? ` — ${x.fields.equipment}` : ''}`));
         h.push(auto.length ? `<div class="bul">${paperBullets(auto.map(a => '- ' + a).join('\n'))}</div>` : `<p class="no-print hint">왼쪽에서 보고서에 넣을 기록을 고르세요.</p>`);
+      }
       }
 
       if (it.tests.length) {
@@ -4831,10 +4845,84 @@ ${ctxText}`;
       await imgSection(it.fracto, '파단면 분석', fractoText);
       await imgSection(it.micro, '미세조직 분석', microText);
 
-      h.push(`<h2>${sec++}. 결론</h2>`);
-      h.push(r.conclusion.trim() ? `<div class="bul">${paperBullets(r.conclusion)}</div>` : `<p class="no-print hint">왼쪽 '결론' 칸에 종합 결론을 입력하세요.</p>`);
+      if (!r.opts.single || r.conclusion.trim()) {
+        h.push(`<h2>${sec++}. 결론</h2>`);
+        h.push(r.conclusion.trim() ? `<div class="bul">${paperBullets(r.conclusion)}</div>` : `<p class="no-print hint">왼쪽 '결론' 칸에 종합 결론을 입력하세요.</p>`);
+      }
+      // 부록: AI 상담 기록 (선택)
+      if (r.opts.chat) {
+        const withChat = [...it.tests, ...it.fracto, ...it.micro].filter(x => (x.chat || []).some(m => m.role === 'ai'));
+        if (withChat.length) {
+          h.push(`<h2>부록. AI 상담 기록 (참고)</h2>`);
+          withChat.forEach(x => {
+            if (withChat.length > 1) h.push(`<h3>${escapeHtml(x.name)}</h3>`);
+            x.chat.filter(m => m.role === 'ai' || m.role === 'user').forEach(m => {
+              const t = m.text.replace(/\*\*/g, '').replace(/^#+\s*/gm, '').trim();
+              h.push(m.role === 'user'
+                ? `<p class="qa-q">Q. ${escapeHtml(t)}</p>`
+                : `<div class="qa-a"><span class="qa-tag">AI${m.model ? ' · ' + escapeHtml(m.model) : ''}</span>${escapeHtml(t)}</div>`);
+            });
+          });
+          h.push(`<p class="note" style="margin-top:6px;">※ AI 상담 내용은 참고 의견이며 분석자의 확인을 거치지 않은 내용을 포함할 수 있음.</p>`);
+        }
+      }
       h.push(`<div class="note">※ 목표 대비 판정은 입력한 목표값과의 단순 비교이며, 공식 판정은 시험성적서와 해당 규격 절차를 따름. 이미지 측정값은 스케일 보정 정확도에 따라 달라질 수 있음.</div>`);
       return h.join('\n');
+    }
+
+    // ---- 기록 1건 PDF: 인쇄 창의 'PDF로 저장' 사용 (한글 글꼴이 그대로 유지됨) ----
+    function recordById(kind, id) {
+      return (kind === 'tests' ? DB.tests : DB[kind]).find(x => x.id === id) || null;
+    }
+
+    async function buildRecordPrint(kind, id, o) {
+      const rec = recordById(kind, id);
+      if (!rec) return null;
+      const r = normalizeReport({
+        title: o.title || `${rec.name} 분석 결과`,
+        author: settings.author, org: settings.org, docNo: o.docNo || '',
+        include: { tests: [], fracto: [], micro: [], [kind]: [id] },
+        opts: { charts: o.charts !== false, images: o.maxImages > 0, maxImages: o.maxImages || 4, single: true, chat: !!o.chat }
+      });
+      const html = await buildPaper(r);
+      const area = document.getElementById('printArea');
+      area.innerHTML = `<article class="paper">${html}</article>`;
+      await Promise.all([...area.querySelectorAll('img')].map(im => (im.decode ? im.decode().catch(() => {}) : Promise.resolve())));
+      return r;
+    }
+
+    async function exportRecordPdf(kind, id) {
+      const rec = recordById(kind, id);
+      if (!rec) return;
+      const hasChat = (rec.chat || []).some(m => m.role === 'ai');
+      const fields = [
+        { id: 'title', label: '문서 제목', type: 'text', value: `${rec.name} ${kind === 'tests' ? '시험 결과' : '분석 결과'}` },
+        { id: 'docNo', label: '문서 번호 (선택)', type: 'text', value: '' }
+      ];
+      if (kind !== 'tests') fields.push({ id: 'imgs', label: `이미지 (${rec.images.length}장 중)`, type: 'select', value: String(Math.min(4, Math.max(rec.images.length, 0))), options: [['0', '넣지 않음'], ['1', '1장'], ['2', '2장'], ['4', '최대 4장'], ['8', '최대 8장']] });
+      else fields.push({ id: 'charts', label: '차트', type: 'select', value: 'yes', options: [['yes', '넣기'], ['no', '넣지 않음']] });
+      fields.push({ id: 'chat', label: 'AI 상담 기록', type: 'select', value: 'no', options: hasChat ? [['no', '넣지 않음'], ['yes', '부록으로 넣기']] : [['no', '상담 기록 없음']], hint: "다음 인쇄 창에서 대상(프린터)을 'PDF로 저장'으로 고르세요." });
+      const out = await askForm('PDF 만들기', fields, 'PDF 만들기');
+      if (!out) return;
+      showToast('PDF용 문서를 만드는 중...');
+      const r = await buildRecordPrint(kind, id, {
+        title: out.title.trim(), docNo: out.docNo.trim(),
+        maxImages: kind === 'tests' ? 0 : Number(out.imgs || 0),
+        charts: kind === 'tests' ? out.charts !== 'no' : true,
+        chat: out.chat === 'yes'
+      });
+      if (!r) return;
+      const oldTitle = document.title;
+      document.title = safeFileName(`${r.title}_${r.date}`);
+      document.body.classList.add('print-single');
+      const done = () => {
+        document.body.classList.remove('print-single');
+        document.getElementById('printArea').innerHTML = '';
+        document.title = oldTitle;
+        window.removeEventListener('afterprint', done);
+      };
+      window.addEventListener('afterprint', done);
+      setTimeout(() => window.print(), 50);
     }
 
     function reportPlainText(r) {
